@@ -1,0 +1,16 @@
+- name: show user data
+  hosts: servers
+  become: yes 
+
+  vars_files:
+    - secret.yml
+  
+  tasks:
+    - name: show user data
+      debug:
+        msg: "Username: {{ username }}, Password: {{ password }}"
+      # no_log: true
+
+
+# encrypt secrets 
+# ansible-vault encrypt secret.yml --vault-password-file vault_pass.txt

@@ -1,0 +1,29 @@
+- name: copy file to server
+  hosts: servers
+  become: yes
+
+  tasks:
+    - name: install nginx
+      apt:
+        name: nginx
+        state: present
+
+    - name : copy html to server
+      copy:
+        src: <index.html>
+        dest: var/www/html/index.html
+    
+    - name : start nginx
+      service:
+        name: nginx
+        state: started
+
+    - name: restart nginx
+      service:
+        name: nginx
+        state: restarted
+
+    - name: enable nginx
+      systemd_service:
+        name: nginx
+        enabled: yes

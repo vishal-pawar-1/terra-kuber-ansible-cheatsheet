@@ -1,0 +1,75 @@
+stages:
+  - build
+  - push
+  - deploy
+  - monitoring
+
+job_build:
+  stage: build
+  tags:
+    - <tag_name_in_gitlab_runner>
+  script:
+    - cd <directory_name>
+    - docker build -t <image_name> .
+    - echo "Build completed successfully."
+    - docker build -t <backend_image_name> .
+    - echo "Backend build completed successfully."
+
+job_push:
+  stage: push
+  tags:
+    - <>tag_name_in_gitlab_runner>
+  script:
+    - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
+    - docker push <image_name>
+    - echo "Push completed successfully."
+    - docker push <backend_image_name>
+    - echo "Backend push completed successfully."
+
+job_deploy:
+  stage: deploy
+  tags:
+    - <tag_name_in_gitlab_runner>
+  script:
+   
+    - |
+      if kind get clusters | grep -q "^<cluster_name>$"; then
+        echo "<cluster_name> cluster already exists"
+      else
+        echo "Creating <cluster_name> cluster..."
+        kind create cluster --name=<cluster_name> --config=config.yml
+      fi
+
+    - |
+      if kubectl get namespace <namespace_name> >/dev/null 2>&1; then
+        echo "<namespace_name> namespace already exists"
+      else
+        echo "Creating <namespace_name> namespace..."
+        kubectl create namespace <namespace_name>
+      fi
+
+    - kubectl apply -f configMap.yml
+    - kubectl apply -f secret.yml
+    - kubectl apply -f mysql-service.yml
+    - kubectl apply -f ecom-service.yml
+    - kubectl apply -f ecom-backend-service.yml
+    - kubectl apply -f ecom-backend-deploy.yml
+    - kubectl apply -f mysql-statefu`set.yml
+    - kubectl apply -f ecom-deployment.yml
+
+job_monitoring:
+  stage: monitoring
+  tags:
+    - <tag_name_in_gitlab_runner>
+  script:
+    - curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-4 | bash
+    - sudo usermod -aG helm $USER
+    - helm version
+    - helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+    - helm repo update
+    - kubectl create namespace monitoring 
+    - helm upgrade --install monitoring prometheus-community/kube-prometheus-stack -n monitoring
+    - kubectl patch svc monitoring-grafana -n monitoring -p '{"spec":{"type":"NodePort","ports":[{"port":80,"targetPort":3000,"nodePort":30000}]}}'
+    - kubectl get pods -n monitoring
+    - kubectl get svc -n monitoring
+    - echo "Monitoring setup completed successfully."

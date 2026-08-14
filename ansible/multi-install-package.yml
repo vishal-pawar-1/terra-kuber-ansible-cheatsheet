@@ -1,0 +1,23 @@
+- name: install packages
+  hosts: servers
+  become: yes # apt install without sudo
+
+  vars: 
+    packages:
+      - git
+      - curl
+      - vim
+
+
+  tasks:
+    - name: install packages
+      apt:
+        name: "{{ item }}"
+        state: present
+      loop: "{{ packages }}"
+      debug:
+        msg: "Installing package {{ item }}"
+
+
+# ansible-playbook -i hosts.ini multi-install-package.yml
+
