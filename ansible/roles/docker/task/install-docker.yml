@@ -1,0 +1,32 @@
+- name: update system
+  apt:
+    name: "*"
+    state: latest
+
+- name: install docker.io
+  apt:
+    name: docker.io
+    state: latest
+
+- name: add user to docker group
+  user:
+    name: "{{ item }}"
+    groups: docker
+    append: yes
+  loop: "{{ docker_user }}"
+
+- name: restart docker
+  service:
+    name: docker
+    state: restarted
+
+- name: enable docker service
+  service:
+    name: docker
+    enabled: yes
+
+- name: docker version
+  command: docker --version
+  register: docker_version
+
+
